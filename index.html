@@ -731,49 +731,69 @@ function animateBg() {
             return { value: parseFloat(m[1]), rank: m[2] };
         }
 
-        function calculateBoardRank() {
-            const left = getLeftOverallGrade();
-            const middle = getMiddleOverallGrade();
-            const right = getRightOverallGrade();
-            let sum = left.value + middle.value + right.value;
+function calculateBoardRank() {
+    const left = getLeftOverallGrade();
+    const middle = getMiddleOverallGrade();
+    const right = getRightOverallGrade();
+    let originalSum = left.value + middle.value + right.value;
 
-            let bonusCount = 0;
-            if (document.getElementById('bonus1') && document.getElementById('bonus1').checked) bonusCount++;
-            if (document.getElementById('bonus2') && document.getElementById('bonus2').checked) bonusCount++;
+    // Secret Bonus Logic
+    let bonus1 = document.getElementById('bonus1') && document.getElementById('bonus1').checked;
+    let bonus2 = document.getElementById('bonus2') && document.getElementById('bonus2').checked;
 
-            const battleRank = left.rank;
-            const pointsRank = middle.rank;
-            const physRank = right.rank;
-
-            const allBattlesT = battleRank === "T-Rank";
-            const pointsT = pointsRank === "T-Rank";
-            const physT = physRank === "T-Rank";
-            const pointsZorT = pointsRank === "T-Rank" || pointsRank === "Z-Rank";
-
-            let boardRank = "";
-            if (
-                (sum > 28 && (
-                    (bonusCount >= 1 && physT)
-                    || (bonusCount === 2 && physRank === "S-Rank" && (battleRank === "T-Rank") && pointsZorT)
-                    || (allBattlesT && pointsT && physT)
-                ))
-            ) {
-                boardRank = "T-Rank";
-            } else if (sum >= 25) {
-                boardRank = "S-Rank";
-            } else if (sum >= 17) {
-                boardRank = "A-Rank";
-            } else if (sum >= 8) {
-                boardRank = "B-Rank";
-            } else if (sum >= 4) {
-                boardRank = "C-Rank";
-            } else {
-                boardRank = "Z-Rank";
+    let grade = originalSum;
+    let bonuses = [bonus1, bonus2];
+    for (let i = 0; i < bonuses.length; i++) {
+        if (bonuses[i]) {
+            if (grade < 25) {
+                grade += 4;
+            } else if (grade >= 25 && grade < 32) {
+                grade = 32;
+            } else if (grade >= 32 && grade < 40) {
+                grade = 39;
             }
-
-            document.getElementById('final-rank-output').innerHTML =
-                `Total Grade: <span>${sum} (</span><span class="rank-gradient">${boardRank}</span><span>)</span>`;
+            // No effect if grade is 40
         }
+    }
+
+    // Determine simple component ranks
+    const battleRank = left.rank;
+    const pointsRank = middle.rank;
+    const physRank = right.rank;
+
+    // T-rank conditions
+    const allBattlesT = battleRank === "T-Rank";
+    const pointsT = pointsRank === "T-Rank";
+    const physT = physRank === "T-Rank";
+    const pointsZorT = pointsRank === "T-Rank" || pointsRank === "Z-Rank";
+
+    let boardRank = "";
+    if (
+        grade === 40 // New: Always T-Rank at 40
+        || (
+            grade > 28 && (
+                (bonuses.filter(x=>x).length >= 1 && physT)
+                || (bonuses.filter(x=>x).length === 2 && physRank === "S-Rank" && (battleRank === "T-Rank") && pointsZorT)
+                || (allBattlesT && pointsT && physT)
+            )
+        )
+    ) {
+        boardRank = "T-Rank";
+    } else if (grade >= 25) {
+        boardRank = "S-Rank";
+    } else if (grade >= 17) {
+        boardRank = "A-Rank";
+    } else if (grade >= 8) {
+        boardRank = "B-Rank";
+    } else if (grade >= 4) {
+        boardRank = "C-Rank";
+    } else {
+        boardRank = "Z-Rank";
+    }
+
+    document.getElementById('final-rank-output').innerHTML =
+        `Total Grade: <span>${grade} (</span><span class="rank-gradient">${boardRank}</span><span>)</span>`;
+}
 
         window.onload = function() {
             // Center logo and render GUI
